@@ -1,14 +1,5 @@
-# Copyright 2016-2017 Amazon.com, Inc. or its affiliates. All Rights Reserved.
-# Licensed under the Amazon Software License (the "License"). You may not use
-# this file except in compliance with the License. A copy of the License is
-# located at
-#
-#  http://aws.amazon.com/asl/
-#
-# or in the "license" file accompanying this file. This file is distributed
-# on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, express
-# or implied. See the License for the specific language governing
-# permissions and limitations under the License.
+# Copyright 2016-2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: MIT-0
 
 from __future__ import print_function
 
@@ -16,12 +7,12 @@ import sys
 import argparse
 from awsglue.context import GlueContext
 from pyspark.context import SparkContext
+from pyspark.sql.functions import col
+from scripts_utils import write_backup, write_df_to_catalog, read_from_catalog
 
-from awsglue.dynamicframe import DynamicFrame
-from awsglue.transforms import get_transform
-from pyspark.sql.types import *
-from scripts_utils import *
-from pyspark.sql.functions import *
+DEFAULT_CATALOG_ENDPOINT = 'datacatalog'
+DEFAULT_GLUE_ENDPOINT = 'glue'
+DEFAULT_REGION = 'us-east-1'
 
 def crawler_backup(glue_context, data, options):
     crawler_name = options['crawler.name']
@@ -29,8 +20,10 @@ def crawler_backup(glue_context, data, options):
     database_name = options['catalog.database']
 
     # Only get data for this crawler
+    data['table'] = data['table'].withColumn('tableName', col('name'))
+    data['partition'] = data['partition'].withColumn('tableName', col('table.name'))
     data['table'] = data['table'].filter("parameters.UPDATED_BY_CRAWLER = '%s'" % crawler_name)
-    data['partition'] = data['partition'].join(data['table'].withColumn('tableName', col('name')), 'tableName', 'leftsemi')
+    data['partition'] = data['partition'].join(data['table'], 'tableName', 'leftsemi')
 
     if backup_location is not None:
         # Backup the contents of the catalog at an s3 location
@@ -62,7 +55,7 @@ def crawler_undo(glue_context, **options):
     tables_to_delete = names.subtract(present_before_timestamp)
 
     # Find the partitions that were created since the last timestamp
-    partitions_to_delete = data['partition'].withColumn('name', col('tableName')).join(crawler_tables.withColumn('name', col('table.name')), 'name', 'leftsemi').filter("creationTime < %d" % timestamp)
+    partitions_to_delete = data['partition'].withColumn('name', col('tableName')).join(crawler_tables.withColumn('name', col('table.name')), 'name', 'leftsemi').filter("createTime < %d" % timestamp)
 
     # Write to Catalog
     write_df_to_catalog(tables_to_write, "table", glue_context, options)
@@ -96,7 +89,8 @@ def crawler_undo_options(args):
     if options.timestamp is not None:
         timestamp = options.timestamp
     else:
-        timestamp = crawler['LastCrawlInfo']['StartTime']
+        timestamp_datetime = crawler['LastCrawl']['StartTime']
+        timestamp = timestamp_datetime.timestamp()
 
     return {
         "catalog.name": DEFAULT_CATALOG_ENDPOINT,

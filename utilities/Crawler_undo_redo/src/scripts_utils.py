@@ -1,26 +1,10 @@
 # Copyright 2016-2017 Amazon.com, Inc. or its affiliates. All Rights Reserved.
-# Licensed under the Amazon Software License (the "License"). You may not use
-# this file except in compliance with the License. A copy of the License is
-# located at
-#
-#  http://aws.amazon.com/asl/
-#
-# or in the "license" file accompanying this file. This file is distributed
-# on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, express
-# or implied. See the License for the specific language governing
-# permissions and limitations under the License.
+# SPDX-License-Identifier: MIT-0
 
-import os
-from awsglue.context import GlueContext
 from awsglue.dynamicframe import DynamicFrame
-from awsglue.transforms import get_transform
-from pyspark.sql.types import *
-from pyspark.sql.functions import *
+from pyspark.sql.functions import col, lit, explode, collect_list, struct
 
 COLLECT_RESULT_NAME = "collect_list(named_struct(NamePlaceholder(), unresolvedstar()))"
-DEFAULT_CATALOG_ENDPOINT = 'datacatalog'
-DEFAULT_GLUE_ENDPOINT = 'glue'
-DEFAULT_REGION = 'us-east-1'
 
 def write_backup(data, database_name, backup_location, glue_context):
     nested_tables = nest_data_frame(_order_columns_for_backup(data['table']), database_name, 'table')
@@ -46,8 +30,7 @@ def _order_columns_for_backup(dataframe):
         col('tableType'),
         col('parameters'),
         col('createdBy'),
-        col('values'),
-        col('namespaceName'),
+        col('databaseName'),
         col('tableName'),
         col('table')
     )

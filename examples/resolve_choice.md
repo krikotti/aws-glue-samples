@@ -1,7 +1,7 @@
 # Exploring the `resolveChoice` Method
 
 The [Data Cleaning](data_cleaning_and_lambda.md) sample 
-gives a tast of how useful AWS Glue's resolve-choice capability
+gives a taste of how useful AWS Glue's resolve-choice capability
 can be. This example expands on that and explores each of the
 strategies that the DynamicFrame's `resolveChoice` method offers.
 
@@ -42,12 +42,11 @@ AWS Glue libraries we'll need and set up a single `GlueContext`. We also initial
 the spark session variable for executing Spark SQL queries later in this script.
 
     import sys
-    from awsglue.transforms import *
     from awsglue.utils import getResolvedOptions
     from pyspark.context import SparkContext
     from awsglue.context import GlueContext
+    from awsglue.dynamicframe import DynamicFrame
     from awsglue.job import Job
-    from pyspark.sql import SparkSession
 
     glueContext = GlueContext(SparkContext.getOrCreate())
     spark = glueContext.spark_session
@@ -131,8 +130,8 @@ call is now:
 We could also project the long values and discard the string values using the
 `project:long` option:
 
-  med_resolve_project = medicare_dyf.resolveChoice(specs = [('provider id','project:long')])
-  med_resolve_project.printSchema()
+    med_resolve_project = medicare_dyf.resolveChoice(specs = [('provider id','project:long')])
+    med_resolve_project.printSchema()
   
 Again, the schema now shows that the 'provider id' column only contains long values:
 
@@ -162,20 +161,20 @@ and `provider id_string`:
 
 The resulting schema is:
 
-  root
-  |-- drg definition: string
-  |-- provider id_long: long
-  |-- provider name: string
-  |-- provider street address: string
-  |-- provider city: string
-  |-- provider state: string
-  |-- provider zip code: long
-  |-- hospital referral region description: string
-  |-- total discharges: long
-  |-- average covered charges: string
-  |-- average total payments: string
-  |-- average medicare payments: string
-  |-- provider id_string: string
+    root
+    |-- drg definition: string
+    |-- provider id_long: long
+    |-- provider name: string
+    |-- provider street address: string
+    |-- provider city: string
+    |-- provider state: string
+    |-- provider zip code: long
+    |-- hospital referral region description: string
+    |-- total discharges: long
+    |-- average covered charges: string
+    |-- average total payments: string
+    |-- average medicare payments: string
+    |-- provider id_string: string
 
   
 #### The `make_struct` option
